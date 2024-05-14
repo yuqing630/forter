@@ -6,28 +6,21 @@ import rateLimit from 'express-rate-limit'
 import NodeCache from 'node-cache'
 import 'dotenv/config'
 
-const rateLimits = 50
-// // Rate limiting setup
-const rateLimiterIpstack = rateLimit({
-    windowMs: 60 * 60 * 1000, // 1 hour
-    max: rateLimits, // limit each IP to 100 requests per windowMs
-});
-
-const rateLimiterIpapi = rateLimit({
-    windowMs: 60 * 60 * 1000, // 1 hour
-    max: rateLimits, // limit each IP to 100 requests per windowMs
-});
-
-// // Cache setup
-const cache = new NodeCache({ stdTTL: 60 * 60 }); // Cache expires in 1 hour
-
 const app: Express = express();
-
 app.use(helmet());
-
+const rateLimits = 50
+const cache = new NodeCache({ stdTTL: 60 * 60 });
 const apiKey = process.env.apiKey
 
-// Middleware to check rate limit and cache
+const rateLimiterIpstack = rateLimit({
+    windowMs: 60 * 60 * 1000,
+    max: rateLimits,
+});
+const rateLimiterIpapi = rateLimit({
+    windowMs: 60 * 60 * 1000,
+    max: rateLimits,
+});
+
 const rateLimitAndCache = async (req: Request, res: Response, next: NextFunction) => {
     const ip = req.params.ip;
 
@@ -63,7 +56,6 @@ app.get('/api/ip-to-country/:ip', cors(), rateLimitAndCache, async (req, res) =>
         return res.json({ country: countryName });
     } catch (error) {
         try {
-
             const response = await axios.get(`https://ipapi.co/${ip}/json/`);
             const countryInfo = response.data;
 
